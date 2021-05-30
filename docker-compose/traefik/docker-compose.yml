@@ -1,0 +1,64 @@
+# Traefik
+#
+# Check https://doc.traefik.io/traefik/https/acme
+#
+# .env variables:
+# TRAEFIK_YML -> Path to file. In this case, inside 'data' folder
+# ACME_JSON -> Same ^. Create but leave empty.
+# CONFIG_YML -> Same ^
+# MAIN_DOMAIN -> Your domain.
+# DOMAIN -> Your domain + traefik subdomain.
+# RESOLVER -> Your resolver's name
+# USER -> Basic Auth. Generate with "echo $(htpasswd -nb USER PASSWORD) | sed -e s/\\$/\\$\\$/g"
+# ^ You need apache2-utils installed
+# ^ Double '$' only if writing straight into yml file. Otherwise only one '$'
+
+version: '3'
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      # Set providers: https://doc.traefik.io/traefik/https/acme/#providers
+    command:
+      # Don't know if it's necessary. Added just in case
+      # - "--certificatesResolvers.RESOLVER.acme.dnsChallenge.domains=*.${MAIN_DOMAIN}"
+      # - "--certificatesResolvers.RESOLVER.acme.domains=*.${MAIN_DOMAIN},${MAIN_DOMAIN}"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${TRAEFIK_YML}:/traefik.yml:ro
+      - ${ACME_JSON}:/acme.json
+      - ${CONFIG_YML}:/config.yml:ro
+    labels:
+      - "traefik.enable=true"
+      # Router HTTP
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.http.routers.traefik.rule=Host(`${DOMAIN}`)"
+      # Router HTTPS
+      - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.traefik-secure.entrypoints=https"
+      - "traefik.http.routers.traefik-secure.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.tls.certresolver=${RESOLVER}"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].main=${MAIN_DOMAIN}"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.${MAIN_DOMAIN}"
+      - "traefik.http.routers.traefik-secure.service=api@internal"
+      # Middlewares
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${USER}"
+      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+
+networks:
+  proxy:
+    external: true

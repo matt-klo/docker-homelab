@@ -1,0 +1,108 @@
+# Nextcloud w/ MariaDB
+#
+# .env variables:
+#
+# - General:
+# TZ -> Your timezone. Ex. "America/Argentina/Buenos_Aires"
+# DOMAIN -> Your domain + nextcloud subdomain.
+#
+# - NX:
+# CONFIG_FOLDER -> Config directory. Ex. "/zfs-pool/docker/nextcloud/config/"
+# DATA_FOLDER -> Data directory. Ex. "/zfs-pool/docker/nextcloud/data/"
+#
+# - MDB:
+# MDB_ROOT_PSSWD -> Root user password
+# MDB_DATABASE -> DB name
+# MDB_USER -> User
+# MDB_USER_PSSWD -> User password
+# MDB_DB_FOLDER -> DB directory. Ex. "/zfs-pool/docker/mariadb/"
+
+version: '3.9' # Tested at 2.1 
+
+services:
+
+  nextcloud:
+    container_name: nextcloud
+    restart: unless-stopped
+    image: ghcr.io/linuxserver/nextcloud
+    volumes:
+      - ${CONFIG_FOLDER}:/config
+      - ${DATA_FOLDER}:/data
+    depends_on:
+      - mariadb
+    links:
+      - mariadb
+    environment:
+      - PUID=1000 # Get by executing on terminal 'id'
+      - PGID=1000 # Same
+      - TZ=${TZ}
+#    ports:
+#      - 8103:443
+    networks:
+      - proxy
+      - nextmaria
+    labels:
+      - "traefik.enable=true"
+      # Router HTTP
+      - "traefik.http.routers.nextcloud.entrypoints=http"
+      - "traefik.http.routers.nextcloud.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.nextcloud.middlewares=nextcloud-https-redirect"
+      # Router HTTPS
+      - "traefik.http.routers.nextcloud-secure.entrypoints=https"
+      - "traefik.http.routers.nextcloud-secure.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.nextcloud-secure.tls=true"
+      - "traefik.http.routers.nextcloud-secure.service=nextcloud"
+      - "traefik.http.routers.nextcloud-secure.middlewares=nextcloud-headers,nextcloud-discover"
+      # Middleware redirect
+      - "traefik.http.middlewares.nextcloud-https-redirect.redirectscheme.scheme=https"
+      # Middleware headers. Almost perfect... Almost
+      - "traefik.http.middlewares.nextcloud-headers.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.http.middlewares.nextcloud-headers.headers.customRequestHeaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.nextcloud-headers.headers.referrerPolicy=no-referrer"
+      - "traefik.http.middlewares.nextcloud-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.nextcloud-headers.headers.framedeny=true"
+      - "traefik.http.middlewares.nextcloud-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.nextcloud-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.nextcloud-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.nextcloud-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.nextcloud-headers.headers.sslredirect=true"
+      - "traefik.http.middlewares.nextcloud-headers.headers.contentTypeNosniff=true"
+      # Middleware calDav cardDav discoverability
+      - "traefik.http.middlewares.nextcloud-discover.redirectRegex.permanent=true"
+      - "traefik.http.middlewares.nextcloud-discover.redirectRegex.regex=^/.well-known/ca(l|rd)dav"
+      - "traefik.http.middlewares.nextcloud-discover.redirectRegex.replacement=/remote.php/dav/"
+      # Services
+      - "traefik.http.services.nextcloud.loadbalancer.server.scheme=https"
+      - "traefik.http.services.nextcloud.loadbalancer.server.port=443"
+      - "traefik.docker.network=proxy"
+
+  mariadb:
+    container_name: maria-db-nextcloud
+    restart: unless-stopped
+    image: ghcr.io/linuxserver/mariadb
+    #command: "--transaction-isolation=READ-COMMITTED --binlog-format=ROW"
+    networks:
+      - nextmaria
+    environment:
+      - PUID=1000 # Get by executing on terminal 'id'
+      - PGID=1000 # Same
+      - TZ=${TZ}
+      - MYSQL_ROOT_PASSWORD=${MDB_ROOT_PSSWD}
+      - MYSQL_DATABASE=${MDB_DATABASE}
+      - MYSQL_USER=${MDB_USER}
+      - MYSQL_PASSWORD=${MDB_USER_PSSWD}
+    volumes:
+      - ${MDB_DB_FOLDER}:/config
+    logging:
+      options:
+        max-size: '12m'
+        max-file: '5'
+      driver: json-file
+#    ports:
+#      - 3306:3306
+
+networks:
+  proxy:
+    external: true
+  nextmaria:
+    external: false

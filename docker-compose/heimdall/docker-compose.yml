@@ -1,0 +1,43 @@
+# Heimdall
+#
+# .env variables:
+# TZ -> Your timezone. Ex. "America/Argentina/Buenos_Aires"
+# DATA_FOLDER -> Data directory. Ex. "/home/user/docker/container"
+# DOMAIN -> Your domain + heimdall subdomain.
+
+version: "3.9"
+
+services:
+  heimdall:
+    image: ghcr.io/linuxserver/heimdall
+    container_name: heimdall
+    networks:
+      - proxy
+    environment:
+      - PUID=1000 # Get by executing on terminal 'id'
+      - PGID=1000 # Same
+      - TZ=${TZ}
+    volumes:
+      - ${DATA_FOLDER}:/config
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      # Router HTTP
+      - "traefik.http.routers.heimdall.entrypoints=http"
+      - "traefik.http.routers.heimdall.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.heimdall.middlewares=heimdall-https-redirect"
+      # Router HTTPS
+      - "traefik.http.routers.heimdall-secure.entrypoints=https"
+      - "traefik.http.routers.heimdall-secure.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.heimdall-secure.tls=true"
+      - "traefik.http.routers.heimdall-secure.service=heimdall"
+      # Middelwares
+      - "traefik.http.middlewares.heimdall-https-redirect.redirectscheme.scheme=https"
+      # Services
+      - "traefik.http.services.heimdall.loadbalancer.server.scheme=https"
+      - "traefik.http.services.heimdall.loadbalancer.server.port=443"
+      - "traefik.docker.network=proxy"
+    
+networks:
+  proxy:
+    external: true

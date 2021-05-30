@@ -1,0 +1,31 @@
+api:
+  dashboard: true
+  debug: true
+entryPoints:
+  http:
+    address: ":80"
+  https:
+    address: ":443"
+serversTransport:
+  insecureSkipVerify: true
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+  file:
+    filename: /config.yml
+certificatesResolvers:
+# Resolvers
+# ex:
+#  duckdns:
+#    acme:
+#      # caServer: https://acme-v02.api.letsencrypt.org/acme/acct/120766722 # Staging, testing only
+#      email: 
+#      storage: acme.json
+#      domains: "*.DOMAIN,DOMAIN"
+#      dnsChallenge:
+#        provider: duckdns
+#        delayBeforeCheck: 5
+#        resolvers:
+#          - "1.1.1.1:53"
+#          - "9.9.9.9:53"
