@@ -29,7 +29,7 @@ services:
       - 443:443
     environment:
       # Set providers: https://doc.traefik.io/traefik/https/acme/#providers
-    command:
+    # command:
       # Don't know if it's necessary. Added just in case
       # - "--certificatesResolvers.RESOLVER.acme.dnsChallenge.domains=*.${MAIN_DOMAIN}"
       # - "--certificatesResolvers.RESOLVER.acme.domains=*.${MAIN_DOMAIN},${MAIN_DOMAIN}"
