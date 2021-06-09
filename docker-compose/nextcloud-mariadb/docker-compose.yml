@@ -1,5 +1,7 @@
 # Nextcloud w/ MariaDB
 #
+# A+ Raiting on scan.nextcloud.com
+#
 # .env variables:
 #
 # - General:
@@ -17,7 +19,7 @@
 # MDB_USER_PSSWD -> User password
 # MDB_DB_FOLDER -> DB directory. Ex. "/zfs-pool/docker/mariadb/"
 
-version: '3.9' # Tested at 2.1 
+version: '3.9'
 
 services:
 
