@@ -5,19 +5,20 @@
 # .env variables:
 #
 # - General:
-# TZ -> Your timezone. Ex. "America/Argentina/Buenos_Aires"
+# TZ -> Your timezone. E.g. "America/Argentina/Buenos_Aires"
 # DOMAIN -> Your domain + nextcloud subdomain.
 #
 # - NX:
-# CONFIG_FOLDER -> Config directory. Ex. "/zfs-pool/docker/nextcloud/config/"
-# DATA_FOLDER -> Data directory. Ex. "/zfs-pool/docker/nextcloud/data/"
+# CONFIG_FOLDER -> Config directory. E.g. "/zfs-pool/docker/nextcloud/config/"
+# DATA_FOLDER -> Data directory. E.g. "/zfs-pool/docker/nextcloud/data/"
+# EXTERNAL_FOLDER -> External storage directory, use with 'External Storages' addon. E.g. "/mnt/hdd-label/"
 #
 # - MDB:
 # MDB_ROOT_PSSWD -> Root user password
 # MDB_DATABASE -> DB name
 # MDB_USER -> User
 # MDB_USER_PSSWD -> User password
-# MDB_DB_FOLDER -> DB directory. Ex. "/zfs-pool/docker/mariadb/"
+# MDB_DB_FOLDER -> DB directory. E.g. "/zfs-pool/docker/mariadb/"
 
 version: '3.9'
 
@@ -30,6 +31,7 @@ services:
     volumes:
       - ${CONFIG_FOLDER}:/config
       - ${DATA_FOLDER}:/data
+      #- ${EXTERNAL_FOLDER}:/external # for use with 'External Storages' addon.
     depends_on:
       - mariadb
     links:
