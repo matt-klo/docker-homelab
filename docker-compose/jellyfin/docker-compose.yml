@@ -1,0 +1,64 @@
+# Jellyfin media server
+#
+# .env variables:
+#
+# - General:
+# DOMAIN -> Your domain + jellyfin subdomain.
+#
+# - Volumes:
+# CONFIG_FOLDER -> Config directory. E.g. "/folder/docker/jellyfin/config"
+# CACHE_FOLDER -> Cache directory. E.g. "/folder/docker/jellyfin/config"
+# MEDIA_FOLDER -> Media directory. E.g. "/zfs-pool/media/courses/docker"
+
+version: "3.9"
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin
+    restart: "unless-stopped"
+    user: 1000:1000 # Get by executing on terminal 'id'. format uid:gid
+    # network_mode: "host" # for dlna. not compatible with networks option below
+    volumes:
+      - ${CONFIG_FOLDER}:/config
+      - ${CACHE_FOLDER}:/cache
+      - ${MEDIA_FOLDER}:/media:ro # :ro -> read-only. add if you don't expect to change media's data (e.g. metadata) from inside jellyfin.
+      # - ${MEDIA_FOLDER_MOVIES}:/movies # you can add multiple media volumes according to your needs
+    environment:
+      # Optional - alternative address used for autodiscovery
+      - JELLYFIN_PublishedServerUrl=http://${DOMAIN}
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      # Router HTTP
+      - "traefik.http.routers.jellyfin.entrypoints=http"
+      - "traefik.http.routers.jellyfin.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.jellyfin.middlewares=jellyfin-https-redirect"
+      # Router HTTPS
+      - "traefik.http.routers.jellyfin-secure.entrypoints=https"
+      - "traefik.http.routers.jellyfin-secure.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.jellyfin-secure.tls=true"
+      - "traefik.http.routers.jellyfin-secure.service=jellyfin"
+      - "traefik.http.routers.jellyfin-secure.middlewares=jellyfin-headers"
+      # Middleware redirect
+      - "traefik.http.middlewares.jellyfin-https-redirect.redirectscheme.scheme=https"
+      # Middleware headers
+      - "traefik.http.middlewares.jellyfin-headers.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.http.middlewares.jellyfin-headers.headers.customRequestHeaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.jellyfin-headers.headers.referrerPolicy=no-referrer"
+      - "traefik.http.middlewares.jellyfin-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.jellyfin-headers.headers.framedeny=true"
+      - "traefik.http.middlewares.jellyfin-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.jellyfin-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.jellyfin-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.jellyfin-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.jellyfin-headers.headers.sslredirect=true"
+      - "traefik.http.middlewares.jellyfin-headers.headers.contentTypeNosniff=true"
+      # Services
+      - "traefik.http.services.jellyfin.loadbalancer.server.scheme=http"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - "traefik.docker.network=proxy"
+      
+networks:
+  proxy:
+    external: true

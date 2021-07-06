@@ -2,7 +2,7 @@
 #
 # .env variables:
 # TZ -> Your timezone. Ex. "America/Argentina/Buenos_Aires"
-# DATA_FOLDER -> Data directory. Ex. "/home/user/docker/container"
+# DATA_FOLDER -> Data directory. Ex. "/folder/docker/container"
 # DOMAIN -> Your domain + heimdall subdomain.
 
 version: "3.9"
