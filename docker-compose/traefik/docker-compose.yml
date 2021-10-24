@@ -30,9 +30,9 @@ services:
     environment:
       # Set providers: https://doc.traefik.io/traefik/https/acme/#providers
     # command:
-      # Don't know if it's necessary. Added just in case
-      # - "--certificatesResolvers.RESOLVER.acme.dnsChallenge.domains=*.${MAIN_DOMAIN}"
-      # - "--certificatesResolvers.RESOLVER.acme.domains=*.${MAIN_DOMAIN},${MAIN_DOMAIN}"
+    # Don't know if it's necessary. Added just in case
+    # - "--certificatesResolvers.RESOLVER.acme.dnsChallenge.domains=*.${MAIN_DOMAIN}"
+    # - "--certificatesResolvers.RESOLVER.acme.domains=*.${MAIN_DOMAIN},${MAIN_DOMAIN}"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -40,24 +40,24 @@ services:
       - ${ACME_JSON}:/acme.json
       - ${CONFIG_YML}:/config.yml:ro
     labels:
-      - "traefik.enable=true"
+      - 'traefik.enable=true'
       # Router HTTP
-      - "traefik.http.routers.traefik.entrypoints=http"
-      - "traefik.http.routers.traefik.rule=Host(`${DOMAIN}`)"
+      - 'traefik.http.routers.traefik.entrypoints=http'
+      - 'traefik.http.routers.traefik.rule=Host(`${DOMAIN}`)'
       # Router HTTPS
-      - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
-      - "traefik.http.routers.traefik-secure.entrypoints=https"
-      - "traefik.http.routers.traefik-secure.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
-      - "traefik.http.routers.traefik-secure.tls=true"
-      - "traefik.http.routers.traefik-secure.tls.certresolver=${RESOLVER}"
-      - "traefik.http.routers.traefik-secure.tls.domains[0].main=${MAIN_DOMAIN}"
-      - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.${MAIN_DOMAIN}"
-      - "traefik.http.routers.traefik-secure.service=api@internal"
+      - 'traefik.http.routers.traefik.middlewares=traefik-https-redirect'
+      - 'traefik.http.routers.traefik-secure.entrypoints=https'
+      - 'traefik.http.routers.traefik-secure.rule=Host(`${DOMAIN}`)'
+      - 'traefik.http.routers.traefik-secure.middlewares=authelia@docker,traefik-auth' # Auhtelia middleware
+      - 'traefik.http.routers.traefik-secure.tls=true'
+      - 'traefik.http.routers.traefik-secure.tls.certresolver=${RESOLVER}'
+      - 'traefik.http.routers.traefik-secure.tls.domains[0].main=${MAIN_DOMAIN}'
+      - 'traefik.http.routers.traefik-secure.tls.domains[0].sans=*.${MAIN_DOMAIN}'
+      - 'traefik.http.routers.traefik-secure.service=api@internal'
       # Middlewares
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=${USER}"
-      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - 'traefik.http.middlewares.traefik-auth.basicauth.users=${USER}'
+      - 'traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https'
 
 networks:
   proxy:

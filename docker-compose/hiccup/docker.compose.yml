@@ -1,0 +1,38 @@
+# Hiccup Dashboard
+#
+# .env variables:
+# HICCUP_CONFIG = Hiccup config folder. Example: ".../hiccup/public/config.json"
+# DOMAIN = Hiccup subdomain + your domain
+
+version: '3.9'
+services:
+  hiccup:
+    image: bleckbeard/hiccup:latest
+    restart: unless-stopped
+    networks:
+      - proxy
+    volumes:
+      - ${HICCUP_CONFIG}:/usr/share/nginx/html/config.json
+    labels:
+      - 'traefik.enable=true'
+      # Router HTTP
+      - 'traefik.http.routers.hiccup.entrypoints=http'
+      - 'traefik.http.routers.hiccup.rule=Host(`${DOMAIN}`)'
+      - 'traefik.http.routers.hiccup.middlewares=hiccup-https-redirect'
+      # Router HTTPS
+      - 'traefik.http.routers.hiccup-secure.entrypoints=https'
+      - 'traefik.http.routers.hiccup-secure.rule=Host(`${DOMAIN}`)'
+      - 'traefik.http.routers.hiccup-secure.tls=true'
+      - 'traefik.http.routers.hiccup-secure.service=hiccup'
+      # Authelia Middleware
+      - 'traefik.http.routers.hiccup-secure.middlewares=authelia@docker'
+      # Middelwares
+      - 'traefik.http.middlewares.hiccup-https-redirect.redirectscheme.scheme=https'
+      # Services
+      - 'traefik.http.services.hiccup.loadbalancer.server.scheme=http'
+      - 'traefik.http.services.hiccup.loadbalancer.server.port=80'
+      - 'traefik.docker.network=proxy'
+
+networks:
+  proxy:
+    external: true

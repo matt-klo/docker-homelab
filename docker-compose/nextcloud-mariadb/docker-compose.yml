@@ -23,7 +23,6 @@
 version: '3.9'
 
 services:
-
   nextcloud:
     container_name: nextcloud
     restart: unless-stopped
@@ -40,45 +39,47 @@ services:
       - PUID=1000 # Get by executing on terminal 'id'
       - PGID=1000 # Same
       - TZ=${TZ}
-#    ports:
-#      - 8103:443
+    #    ports:
+    #      - 8103:443
     networks:
       - proxy
       - nextmaria
     labels:
-      - "traefik.enable=true"
+      - 'traefik.enable=true'
       # Router HTTP
-      - "traefik.http.routers.nextcloud.entrypoints=http"
-      - "traefik.http.routers.nextcloud.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.nextcloud.middlewares=nextcloud-https-redirect"
+      - 'traefik.http.routers.nextcloud.entrypoints=http'
+      - 'traefik.http.routers.nextcloud.rule=Host(`${DOMAIN}`)'
+      - 'traefik.http.routers.nextcloud.middlewares=nextcloud-https-redirect'
       # Router HTTPS
-      - "traefik.http.routers.nextcloud-secure.entrypoints=https"
-      - "traefik.http.routers.nextcloud-secure.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.nextcloud-secure.tls=true"
-      - "traefik.http.routers.nextcloud-secure.service=nextcloud"
-      - "traefik.http.routers.nextcloud-secure.middlewares=nextcloud-headers,nextcloud-discover"
+      - 'traefik.http.routers.nextcloud-secure.entrypoints=https'
+      - 'traefik.http.routers.nextcloud-secure.rule=Host(`${DOMAIN}`)'
+      - 'traefik.http.routers.nextcloud-secure.tls=true'
+      - 'traefik.http.routers.nextcloud-secure.service=nextcloud'
+      - 'traefik.http.routers.nextcloud-secure.middlewares=nextcloud-headers,nextcloud-discover'
       # Middleware redirect
-      - "traefik.http.middlewares.nextcloud-https-redirect.redirectscheme.scheme=https"
+      - 'traefik.http.middlewares.nextcloud-https-redirect.redirectscheme.scheme=https'
+      # Authelia Middleware - Disclaimer: Breaks mobile app until I can find a solution.
+      #- "traefik.http.routers.jellyfin-secure.middlewares=authelia@docker"
       # Middleware headers. Almost perfect... Almost
-      - "traefik.http.middlewares.nextcloud-headers.headers.customFrameOptionsValue=SAMEORIGIN"
-      - "traefik.http.middlewares.nextcloud-headers.headers.customRequestHeaders.X-Forwarded-Proto=https"
-      - "traefik.http.middlewares.nextcloud-headers.headers.referrerPolicy=no-referrer"
-      - "traefik.http.middlewares.nextcloud-headers.headers.browserXssFilter=true"
-      - "traefik.http.middlewares.nextcloud-headers.headers.framedeny=true"
-      - "traefik.http.middlewares.nextcloud-headers.headers.stsSeconds=31536000"
-      - "traefik.http.middlewares.nextcloud-headers.headers.stsIncludeSubdomains=true"
-      - "traefik.http.middlewares.nextcloud-headers.headers.stsPreload=true"
-      - "traefik.http.middlewares.nextcloud-headers.headers.forceSTSHeader=true"
-      - "traefik.http.middlewares.nextcloud-headers.headers.sslredirect=true"
-      - "traefik.http.middlewares.nextcloud-headers.headers.contentTypeNosniff=true"
+      - 'traefik.http.middlewares.nextcloud-headers.headers.customFrameOptionsValue=SAMEORIGIN'
+      - 'traefik.http.middlewares.nextcloud-headers.headers.customRequestHeaders.X-Forwarded-Proto=https'
+      - 'traefik.http.middlewares.nextcloud-headers.headers.referrerPolicy=no-referrer'
+      - 'traefik.http.middlewares.nextcloud-headers.headers.browserXssFilter=true'
+      - 'traefik.http.middlewares.nextcloud-headers.headers.framedeny=true'
+      - 'traefik.http.middlewares.nextcloud-headers.headers.stsSeconds=31536000'
+      - 'traefik.http.middlewares.nextcloud-headers.headers.stsIncludeSubdomains=true'
+      - 'traefik.http.middlewares.nextcloud-headers.headers.stsPreload=true'
+      - 'traefik.http.middlewares.nextcloud-headers.headers.forceSTSHeader=true'
+      - 'traefik.http.middlewares.nextcloud-headers.headers.sslredirect=true'
+      - 'traefik.http.middlewares.nextcloud-headers.headers.contentTypeNosniff=true'
       # Middleware calDav cardDav discoverability
-      - "traefik.http.middlewares.nextcloud-discover.redirectRegex.permanent=true"
-      - "traefik.http.middlewares.nextcloud-discover.redirectRegex.regex=^/.well-known/ca(l|rd)dav"
-      - "traefik.http.middlewares.nextcloud-discover.redirectRegex.replacement=/remote.php/dav/"
+      - 'traefik.http.middlewares.nextcloud-discover.redirectRegex.permanent=true'
+      - 'traefik.http.middlewares.nextcloud-discover.redirectRegex.regex=^/.well-known/ca(l|rd)dav'
+      - 'traefik.http.middlewares.nextcloud-discover.redirectRegex.replacement=/remote.php/dav/'
       # Services
-      - "traefik.http.services.nextcloud.loadbalancer.server.scheme=https"
-      - "traefik.http.services.nextcloud.loadbalancer.server.port=443"
-      - "traefik.docker.network=proxy"
+      - 'traefik.http.services.nextcloud.loadbalancer.server.scheme=https'
+      - 'traefik.http.services.nextcloud.loadbalancer.server.port=443'
+      - 'traefik.docker.network=proxy'
 
   mariadb:
     container_name: maria-db-nextcloud

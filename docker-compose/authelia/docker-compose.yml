@@ -1,0 +1,60 @@
+# Authelia authentication middleware
+#
+# .env variables:
+# CONFIG_FOLDER = Folder containing Authelia configuration.yml
+# DOMAIN = Authelia subdomain + your domain
+# TZ = Timezone. Example "America/Argentina/Buenos_Aires"
+
+version: '3.3'
+
+networks:
+  net:
+    driver: bridge
+  proxy:
+    external: true
+
+services:
+  authelia:
+    image: authelia/authelia
+    container_name: authelia
+    volumes:
+      - ${CONFIG_FOLDER}:/config # Authelia config folder. Look at example folder on Authelia's github
+    networks:
+      - proxy
+      - net
+    labels:
+      - 'traefik.enable=true'
+      # Router HTTPS
+      - 'traefik.http.routers.authelia.entrypoints=https'
+      - 'traefik.http.routers.authelia.rule=Host(`${DOMAIN}`)'
+      - 'traefik.http.routers.authelia.tls=true'
+      # - "traefik.http.routers.authelia.service=authelia"
+      # - 'traefik.http.routers.authelia.middlewares=authelia'
+      # Middelwares
+      - 'traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/verify?rd=https://${DOMAIN}/#/'
+      - 'traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true'
+      - 'traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email'
+      # Services
+      # - "traefik.http.services.authelia.loadbalancer.server.scheme=http"
+      # - "traefik.http.services.authelia.loadbalancer.server.port=9091"
+      - 'traefik.docker.network=proxy'
+    expose:
+      - 9091
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    environment:
+      - TZ=${TZ}
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - ./redis:/data
+    networks:
+      - net
+    expose:
+      - 6379
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
